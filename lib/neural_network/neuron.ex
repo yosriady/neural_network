@@ -13,6 +13,7 @@ defmodule NeuralNetwork.Neuron do
   @type weights :: list(float)
   @type bias :: float
   @type output :: float
+  @type activation_function :: (float -> float)
   @type t :: %NeuralNetwork.Neuron{
     size: size,
     weights: list(float),
@@ -29,12 +30,13 @@ defmodule NeuralNetwork.Neuron do
     }
   end
 
-  @spec output(t, inputs) :: output
-  def output(%NeuralNetwork.Neuron{size: size, weights: weights, bias: bias}, inputs)
+  @spec output(t, inputs, activation_function) :: output
+  def output(%NeuralNetwork.Neuron{size: size, weights: weights, bias: bias},
+            inputs, activation_function \\ &Math.sigmoid/1)
   when length(inputs) == size do
     sum = 0..(size-1)
       |> Enum.map(fn i -> Enum.at(weights, i) * Enum.at(inputs, i) end)
       |> Enum.sum
-    Math.sigmoid(sum + bias)
+    activation_function.(sum + bias)
   end
 end
