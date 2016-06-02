@@ -3,6 +3,9 @@ defmodule NeuralNetwork.Math do
     This module implements some math-related utility functions.
   """
 
+  @doc """
+    Sigmoid function.
+  """
   @spec sigmoid(float) :: float
   def sigmoid(z) do
       1 / (1 + :math.pow(e, -z))

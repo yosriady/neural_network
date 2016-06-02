@@ -6,34 +6,31 @@ defmodule NeuralNetwork.Neuron do
 
   alias NeuralNetwork.Math
 
-  defstruct [:size, :weights, :bias]
+  defstruct [:weights, :bias]
 
-  @type size :: pos_integer
   @type inputs :: list(float)
   @type weights :: list(float)
   @type bias :: float
-  @type output :: float
+  @type activation :: float
   @type activation_function :: (float -> float)
   @type t :: %NeuralNetwork.Neuron{
-    size: size,
-    weights: list(float),
-    bias: bias
+    weights: list(float), # List of weights for each input e.g. [-2.0, 1.0, 0.5]
+    bias: bias # Bias for the neuron e.g. 5.5
   }
 
-  @spec new(size, weights, bias) :: t
-  def new(size, weights, bias)
-  when length(weights) == size do
+  @spec new(weights, bias) :: t
+  def new(weights, bias) do
     %NeuralNetwork.Neuron{
-      size: size,
       weights: weights,
       bias: bias
     }
   end
 
-  @spec output(t, inputs, activation_function) :: output
-  def output(%NeuralNetwork.Neuron{size: size, weights: weights, bias: bias},
+  @spec activate(t, inputs, activation_function) :: activation
+  def activate(%NeuralNetwork.Neuron{weights: weights, bias: bias},
             inputs, activation_function \\ &Math.sigmoid/1)
-  when length(inputs) == size do
+  when length(inputs) == length(weights) do
+    size = length(inputs)
     sum = 0..(size-1)
       |> Enum.map(fn i -> Enum.at(weights, i) * Enum.at(inputs, i) end)
       |> Enum.sum
