@@ -19,6 +19,7 @@ defmodule NeuralNetwork.Optimization do
     quadratic_sum = 0..(n-1)
       |> Enum.map(fn i -> Enum.at(expected, i) - Enum.at(actual, i) end)
       |> Enum.map(fn i -> :math.pow(i, 2) end)
+      |> Enum.sum
     (1/(2*n)) * quadratic_sum
   end
 end

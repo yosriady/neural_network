@@ -8,6 +8,14 @@ defmodule NeuralNetwork.Network do
 
   defstruct [:sizes, :biases, :weights]
 
+  @type sizes :: list(pos_integer)
+  @type inputs :: list(float)
+  @type outputs :: list(float)
+  @type training_data :: list(tuple)
+  @type epochs :: pos_integer
+  @type mini_batch_size :: pos_integer
+  @type eta :: pos_integer
+  @type test_data :: list(tuple)
   @type t :: %NeuralNetwork.Network{
     sizes: list(pos_integer), # size of layers i.e. [2,3,1]
     biases: list(list(float)),
@@ -17,6 +25,7 @@ defmodule NeuralNetwork.Network do
   @doc """
     Creates a new neural network.
   """
+  @spec new(sizes) :: t
   def new(sizes) do
     weighted_layers = Enum.drop(sizes, 1) # layers except the input layer
     layers_except_output = Enum.drop(sizes, -1)
@@ -42,13 +51,13 @@ defmodule NeuralNetwork.Network do
     }
   end
 
-
   @doc """
     Calculates the outputs of each neuron layer by layer,
     where inputs is a vector of size equal to the size of the (first) input layer
 
     Returns a vector of size equal to the size of the (final) output layer
   """
+  @spec feedforward(t, inputs) :: outputs
   def feedforward(%NeuralNetwork.Network{sizes: sizes, biases: biases, weights: weights}, inputs)
   when length(inputs) == hd(sizes) do
     weighted_layers = Enum.drop(sizes, 1)
@@ -77,6 +86,42 @@ defmodule NeuralNetwork.Network do
                  layer_outputs)
   end
 
+  @doc """
+    Trains the neural network using mini-batch stochastic gradient descent.
+
+    training_data is a list of tuples {x, y} representing the training inputs and
+    the desired outputs.
+
+    If test_data is supplied, the network will be evaluated against the test data
+    after each eopch, and partial progress printed out.
+  """
+  @spec sgd(t, training_data, epochs, mini_batch_size, eta, test_data) :: t
+  def sgd(network, training_data, epochs, mini_batch_size, eta, test_data \\ nil) do
+    # TODO: refactor the `do N times` as a recursion of epochs to 0
+    # So that we can return the new network after update_mini_batch
+    0..(epochs - 1)
+      |> Enum.map(fn ->
+        training_data
+        |> Enum.shuffle
+        |> Enum.chunk(mini_batch_size)
+        |> update_mini_batch(eta)
+        # TODO: implement if test_data within the above map
+      end)
+  end
+
+
+  @doc """
+    Updates the network weights and biases by applying gradient descent using
+    backpropagation to a single mini batch.
+
+    mini_batch is a list of tuples
+    eta is the learning rate
+  """
+  def update_mini_batch(%NeuralNetwork.Network{biases: biases, weights: weights}, mini_batch, eta) do
+    nabla_biases = (for n <- weighted_layers, do: Num.zeros(n, 1)),
+    nabla_weights =
+
+  end
 
   @doc """
     Trains a neural network.
