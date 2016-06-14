@@ -9,17 +9,24 @@ defmodule NeuralNetwork.Network do
   defstruct [:sizes, :biases, :weights]
 
   @type sizes :: list(pos_integer)
-  @type inputs :: list(float)
+  @type input :: float
+  @type inputs :: list(input)
+  @type output :: float
   @type outputs :: list(float)
   @type training_data :: list(tuple)
+  @type mini_batch :: list(tuple)
   @type epochs :: pos_integer
   @type mini_batch_size :: pos_integer
   @type eta :: pos_integer
   @type test_data :: list(tuple)
+  @type bias :: float
+  @type weight :: float
+  @type delta_biases :: list(list(bias))
+  @type delta_weights :: list(list(weight))
   @type t :: %NeuralNetwork.Network{
     sizes: list(pos_integer), # size of layers i.e. [2,3,1]
-    biases: list(list(float)),
-    weights: list(list(float))
+    biases: list(list(bias)),
+    weights: list(list(weight))
   }
 
   @doc """
@@ -33,8 +40,9 @@ defmodule NeuralNetwork.Network do
       sizes: sizes,
       # biases is a list of lists, one list per layer, where each list
       # stores the biases of nodes in that layer
-      biases: (for n <- weighted_layers, do: Num.randn(n, 1)),
-      # weights is a list of matrices. Given a network of layer sizes [2,3,1] and
+      biases: (for n <- weighted_layers, do: Num.gauss(n)),
+      # weights is a list of matrices, one matrix per layer
+      # Given a network of layer sizes [2,3,1] and
       # neurons `A`, `B` in the first layer & neurons  `1`, `2`, `3` in the second
       # we have:
       #
@@ -76,7 +84,7 @@ defmodule NeuralNetwork.Network do
                     inputs) do
     # Activate the current layer of neurons, returning a vector of outputs
     layer_outputs = 0..(layer_size - 1)
-    |> Enum.map(fn(i) -> Neuron.new(Enum.at(layer_weights, i), Enum.at(Enum.at(layer_biases, i), 0)) end)
+    |> Enum.map(fn(i) -> Neuron.new(Enum.at(layer_weights, i), Enum.at(layer_biases, i)) end)
     |> Enum.map(fn(n) -> Neuron.activate(n, inputs) end)
 
     # We recursively feedforward to the next layers
@@ -89,11 +97,14 @@ defmodule NeuralNetwork.Network do
   @doc """
     Trains the neural network using mini-batch stochastic gradient descent.
 
-    training_data is a list of tuples {x, y} representing the training inputs and
-    the desired outputs.
+    training_data is a list of tuples {x, y} containing two lists:
+    the training inputs x and
+    the desired outputs y.
 
     If test_data is supplied, the network will be evaluated against the test data
     after each eopch, and partial progress printed out.
+
+    Returns a new, trained network.
   """
   @spec sgd(t, training_data, epochs, mini_batch_size, eta, test_data) :: t
   def sgd(network, training_data, epochs, mini_batch_size, eta, test_data \\ nil) do
@@ -107,6 +118,8 @@ defmodule NeuralNetwork.Network do
         # |> update_mini_batch(eta)
         # TODO: implement if test_data within the above map
       end)
+
+      network #TODO: not yet trained
   end
 
 
@@ -114,13 +127,43 @@ defmodule NeuralNetwork.Network do
     Updates the network weights and biases by applying gradient descent using
     backpropagation to a single mini batch.
 
-    mini_batch is a list of tuples
-    eta is the learning rate
-  """
-  def update_mini_batch(%NeuralNetwork.Network{biases: biases, weights: weights}, mini_batch, eta) do
-    # nabla_biases = (for n <- weighted_layers, do: Num.zeros(n, 1))
-    # nabla_weights =
+    mini_batch is a list of tuples {x, y} containing two lists:
+    the training inputs x and
+    the desired outputs y.
 
+    eta is the learning rate
+
+    Returns a new network with updated weights and biases.
+  """
+  @spec update_mini_batch(t, mini_batch, eta) :: t
+  def update_mini_batch(%NeuralNetwork.Network{sizes: sizes, biases: biases, weights: weights} = network, mini_batch, eta) do
+    weighted_layers = Enum.drop(sizes, 1) # sizes of layers except the input layer
+    layers_except_output = Enum.drop(sizes, -1) # sizes of layers except the output layer
+    nabla_biases = (for n <- weighted_layers, do: Num.zeros(n)) # Set all biases to 0
+    nabla_weights = (for tuple <- Enum.zip(layers_except_output, weighted_layers), do: Num.zeros(elem(tuple, 1), elem(tuple, 0))) # Set all weights to 0
+    Enum.reduce(mini_batch, {nabla_biases, nabla_weights}, fn({x, y}, {nb, nw}) ->
+      {delta_biases, delta_weights} = backpropagate(network, x, y)
+
+      sum_pair = (fn {h, t} -> h + t end)
+      nabla_biases = Num.merge_matrices(nb, delta_biases, sum_pair)
+      nabla_weights = Num.merge_lists_of_matrices(nw, delta_weights, sum_pair)
+      {nabla_biases, nabla_weights}
+    end)
+
+    gradient_sum_pair = (fn {h, t} -> h - (eta / length(mini_batch)) * t end)
+    new_biases = Num.merge_matrices(biases, nabla_biases, gradient_sum_pair)
+    new_weights = Num.merge_lists_of_matrices(weights, nabla_weights, gradient_sum_pair)
+    %NeuralNetwork.Network{network | weights: new_weights, biases: new_biases}
+  end
+
+  @spec backpropagate(t, input, output) :: {delta_biases, delta_weights}
+  def backpropagate(%NeuralNetwork.Network{sizes: sizes}, _input, _arget) do
+    # TODO: Chapter 2
+    weighted_layers = Enum.drop(sizes, 1) # sizes of layers except the input layer
+    layers_except_output = Enum.drop(sizes, -1) # sizes of layers except the output layer
+    delta_biases = (for n <- weighted_layers, do: Num.zeros(n))
+    delta_weights = (for tuple <- Enum.zip(layers_except_output, weighted_layers), do: Num.zeros(elem(tuple, 1), elem(tuple, 0)))
+    {delta_biases, delta_weights}
   end
 
   @doc """
