@@ -3,7 +3,7 @@ defmodule NeuralNetwork.Network do
     This module implements a feed-forward artifical neural network with backpropagation.
   """
 
-  alias NeuralNetwork.Random
+  alias NeuralNetwork.Num
   alias NeuralNetwork.Neuron
 
   defstruct [:sizes, :biases, :weights]
@@ -33,7 +33,7 @@ defmodule NeuralNetwork.Network do
       sizes: sizes,
       # biases is a list of lists, one list per layer, where each list
       # stores the biases of nodes in that layer
-      biases: (for n <- weighted_layers, do: Random.randn(n, 1)),
+      biases: (for n <- weighted_layers, do: Num.randn(n, 1)),
       # weights is a list of matrices. Given a network of layer sizes [2,3,1] and
       # neurons `A`, `B` in the first layer & neurons  `1`, `2`, `3` in the second
       # we have:
@@ -47,7 +47,7 @@ defmodule NeuralNetwork.Network do
       #
       # A1 is the incoming edge from the first layer neuron `A` to
       # the second layer neuron `1`
-      weights: (for tuple <- Enum.zip(layers_except_output, weighted_layers), do: Random.randn(elem(tuple, 1), elem(tuple, 0)))
+      weights: (for tuple <- Enum.zip(layers_except_output, weighted_layers), do: Num.randn(elem(tuple, 1), elem(tuple, 0)))
     }
   end
 
@@ -104,7 +104,7 @@ defmodule NeuralNetwork.Network do
         training_data
         |> Enum.shuffle
         |> Enum.chunk(mini_batch_size)
-        |> update_mini_batch(eta)
+        # |> update_mini_batch(eta)
         # TODO: implement if test_data within the above map
       end)
   end
@@ -118,8 +118,8 @@ defmodule NeuralNetwork.Network do
     eta is the learning rate
   """
   def update_mini_batch(%NeuralNetwork.Network{biases: biases, weights: weights}, mini_batch, eta) do
-    nabla_biases = (for n <- weighted_layers, do: Num.zeros(n, 1)),
-    nabla_weights =
+    # nabla_biases = (for n <- weighted_layers, do: Num.zeros(n, 1))
+    # nabla_weights =
 
   end
 
