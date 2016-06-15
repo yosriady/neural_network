@@ -61,8 +61,10 @@ defmodule NeuralNetwork.Network do
   end
 
   @doc """
-    Calculates the outputs of each neuron layer by layer,
-    where inputs is a vector of size equal to the size of the (first) input layer
+    Traverse the network for a given vector of inputs and return a vector of outputs.
+
+    feedforward calculates the outputs of each neuron layer by layer,
+    where inputs is a vector of size equal to the size of the (first) input layer.
 
     Returns a list of vectors, from input to activation to output - one for each layer.
   """
@@ -105,26 +107,28 @@ defmodule NeuralNetwork.Network do
     the training inputs x and
     the desired outputs y.
 
+    eta is the learning rate.
+
     If test_data is supplied, the network will be evaluated against the test data
-    after each eopch, and partial progress printed out.
+    after each epoch, and partial progress printed out.
 
     Returns a new, trained network.
   """
-  def sgd(network, _training_data, 0, _mini_batch_size, _eta, _test_data) do # Base case
+  def sgd(network, _training_data, 0, _mini_batch_size, _eta) do # Base case
     network
   end
 
-  @spec sgd(t, training_data, epochs, mini_batch_size, eta, test_data) :: t
-  def sgd(network, training_data, epochs, mini_batch_size, eta, test_data) do # Recursive case
-    training_data = training_data
-                    |> Enum.shuffle
-    mini_batches = training_data
+  @spec sgd(t, training_data, epochs, mini_batch_size, eta) :: t
+  def sgd(network, training_data, epochs, mini_batch_size, eta) do # Recursive case
+    shuffled_training_data = training_data
+                                |> Enum.shuffle
+    mini_batches = shuffled_training_data
                     |> Enum.chunk(mini_batch_size)
     updated_network = Enum.reduce(mini_batches, network, fn(mini_batch, network) ->
         update_mini_batch(network, mini_batch, eta)
     end)
 
-    sgd(updated_network, training_data, epochs - 1, mini_batch_size, eta, test_data)
+    sgd(updated_network, shuffled_training_data, epochs - 1, mini_batch_size, eta)
   end
 
   @doc """
@@ -183,17 +187,6 @@ defmodule NeuralNetwork.Network do
   end
 
   @doc """
-    Trains a neural network.
-
-    The network will train until the training error has gone below the threshold or
-    the max number of iterations (default 20000) has been reached, whichever comes first.
-  """
-  def train() do
-    # TODO
-  end
-
-
-  @doc """
     Return the number of test inputs for which the neural network outputs the
     correct result.
   """
@@ -209,12 +202,5 @@ defmodule NeuralNetwork.Network do
           if actual == desired, do: count + 1, else: count
       end)
     matches
-  end
-
-  @doc """
-    Traverse the network for a given input and return a result.
-  """
-  def run() do
-    # TODO
   end
 end
