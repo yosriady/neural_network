@@ -15,11 +15,11 @@ defmodule NeuralNetwork.Network do
   @type outputs :: list(float)
   @type activations :: list(outputs)
   @type training_data :: list(tuple)
+  @type test_data :: list(tuple)
   @type mini_batch :: list(tuple)
   @type epochs :: pos_integer
   @type mini_batch_size :: pos_integer
   @type eta :: pos_integer
-  @type test_data :: list(tuple)
   @type bias :: float
   @type weight :: float
   @type delta_nabla_biases :: list(list(bias))
@@ -190,6 +190,25 @@ defmodule NeuralNetwork.Network do
   """
   def train() do
     # TODO
+  end
+
+
+  @doc """
+    Return the number of test inputs for which the neural network outputs the
+    correct result.
+  """
+  @spec evaluate(t, test_data) :: pos_integer
+  def evaluate(network, test_data) do
+    actual_outputs = test_data
+        |> Enum.map(fn {test_inputs, _} -> feedforward(network, test_inputs) end)
+        |> List.last # Get only the final output activation
+    desired_outputs = test_data
+        |> Enum.map(fn {_, test_outputs} -> test_outputs end) # Get test outputs
+    matches = Enum.zip(actual_outputs, desired_outputs) # Compare actual vs desired outputs
+      |> Enum.reduce(0, fn({actual, desired}, count) ->
+          if actual == desired, do: count + 1, else: count
+      end)
+    matches
   end
 
   @doc """
