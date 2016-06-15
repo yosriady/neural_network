@@ -106,22 +106,22 @@ defmodule NeuralNetwork.Network do
 
     Returns a new, trained network.
   """
-  @spec sgd(t, training_data, epochs, mini_batch_size, eta, test_data) :: t
-  def sgd(network, training_data, epochs, mini_batch_size, eta, test_data \\ nil) do
-    # TODO: refactor the `do N times` as a recursion of epochs to 0
-    # So that we can return the new network after update_mini_batch
-    0..(epochs - 1)
-      |> Enum.map(fn ->
-        training_data
-        |> Enum.shuffle
-        |> Enum.chunk(mini_batch_size)
-        # |> update_mini_batch(eta)
-        # TODO: implement if test_data within the above map
-      end)
-
-      network #TODO: not yet trained
+  def sgd(network, _training_data, 0, _mini_batch_size, _eta, _test_data) do # Base case
+    network
   end
 
+  @spec sgd(t, training_data, epochs, mini_batch_size, eta, test_data) :: t
+  def sgd(network, training_data, epochs, mini_batch_size, eta, test_data) do # Recursive case
+    training_data = training_data
+                    |> Enum.shuffle
+    mini_batches = training_data
+                    |> Enum.chunk(mini_batch_size)
+    updated_network = Enum.reduce(mini_batches, network, fn(mini_batch, network) ->
+        update_mini_batch(network, mini_batch, eta)
+    end)
+
+    sgd(updated_network, training_data, epochs - 1, mini_batch_size, eta, test_data)
+  end
 
   @doc """
     Updates the network weights and biases by applying gradient descent using
