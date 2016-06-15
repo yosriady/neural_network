@@ -12,6 +12,14 @@ defmodule NeuralNetwork.Math do
   end
 
   @doc """
+    Derivative of the Sigmoid function.
+  """
+  @spec sigmoid_prime(float) :: float
+  def sigmoid_prime(z) do
+      sigmoid(z) * (1 - sigmoid(z))
+  end
+
+  @doc """
     The mathematical constant e.
   """
   @spec e :: float

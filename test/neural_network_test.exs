@@ -5,7 +5,10 @@ defmodule NeuralNetworkTest do
   test "Basic neural network" do
     sizes = [2,3,1]
     n = NeuralNetwork.Network.new(sizes)
-    output = NeuralNetwork.Network.feedforward(n, [0,1])
-    assert length(output) == Enum.at(sizes, -1)
+    activations = NeuralNetwork.Network.feedforward(n, [0,1])
+    assert length(activations) == length(sizes)
+
+    second_layer_activations = Enum.at(activations, 1)
+    assert length(second_layer_activations) == Enum.at(sizes, 1)
   end
 end
