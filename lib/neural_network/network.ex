@@ -114,12 +114,14 @@ defmodule NeuralNetwork.Network do
 
     Returns a new, trained network.
   """
-  def sgd(network, _training_data, 0, _mini_batch_size, _eta) do # Base case
+  def sgd(network, training_data, epochs, mini_batch_size, eta, test_data \\ [])
+
+  def sgd(network, _training_data, 0, _mini_batch_size, _eta, _test_data) do # Base case
     network
   end
 
-  @spec sgd(t, training_data, epochs, mini_batch_size, eta) :: t
-  def sgd(network, training_data, epochs, mini_batch_size, eta) do # Recursive case
+  @spec sgd(t, training_data, epochs, mini_batch_size, eta, test_data) :: t
+  def sgd(network, training_data, epochs, mini_batch_size, eta, test_data) do # Recursive case
     shuffled_training_data = training_data
                                 |> Enum.shuffle
     mini_batches = shuffled_training_data
@@ -128,7 +130,13 @@ defmodule NeuralNetwork.Network do
         update_mini_batch(network, mini_batch, eta)
     end)
 
-    sgd(updated_network, shuffled_training_data, epochs - 1, mini_batch_size, eta)
+    # Debug logs
+    if(!Enum.empty? test_data) do
+        matches = evaluate(updated_network, test_data)
+        IO.puts "Epoch #{epochs}: #{matches} / #{length(test_data)}"
+    end
+
+    sgd(updated_network, shuffled_training_data, epochs - 1, mini_batch_size, eta, test_data)
   end
 
   @doc """
