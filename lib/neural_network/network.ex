@@ -5,6 +5,7 @@ defmodule NeuralNetwork.Network do
 
   alias NeuralNetwork.Num
   alias NeuralNetwork.Neuron
+  alias NeuralNetwork.Math
 
   defstruct [:sizes, :biases, :weights]
 
@@ -39,6 +40,7 @@ defmodule NeuralNetwork.Network do
     layers_except_output = Enum.drop(sizes, -1)
     %NeuralNetwork.Network{
       sizes: sizes,
+      learning_rate: learning_rate,
       # biases is a list of lists, one list per layer, where each list
       # stores the biases of nodes in that layer
       biases: (for n <- weighted_layers, do: Num.gauss(n)),
@@ -181,15 +183,40 @@ defmodule NeuralNetwork.Network do
 
     Input is a vector list of training inputs,
     Output is a vector list of desired outputs
+
+    Returns a layer by layer lists of changes to biases and weights.
   """
   @spec backpropagate(t, inputs, outputs) :: {delta_nabla_biases, delta_nabla_weights}
-  def backpropagate(%NeuralNetwork.Network{sizes: sizes}, _input, _output) do
+  def backpropagate(%NeuralNetwork.Network{sizes: sizes, biases: biases, weights: weights, learning_rate: learning_rate} = network,
+                    training_inputs, target_outputs) do
     weighted_layers = Enum.drop(sizes, 1) # sizes of layers except the input layer
     layers_except_output = Enum.drop(sizes, -1) # sizes of layers except the output layer
     nabla_biases = (for n <- weighted_layers, do: Num.zeros(n)) # Set all biases to 0
     nabla_weights = (for tuple <- Enum.zip(layers_except_output, weighted_layers), do: Num.zeros(elem(tuple, 1), elem(tuple, 0))) # Set all weights to 0
 
-        #   TODO: chapter 2
+    # feedforward
+    activations = feedforward(network, training_inputs) # layer-by-layer list of activations, from input to output layer
+
+    # backward pass
+    training_outputs = Enum.drop(activations, -1)
+    output_layer_delta = Enum.zip(training_outputs, target_outputs)
+      |> Enum.map(fn {training_output, target_output} ->
+         Math.sigmoid(training_output) * Math.sigmoid(1 -  training_output) * (target_output - training_output)
+      end)
+    nabla_biases = List.replace_at(nabla_biases, -1, output_layer_delta) # update output layer nabla biases
+
+    # calculate weights between final hidden & output layer
+    hidden_outputs = Enum.drop(activations, -1)
+    hidden_weights = Enum.drop(weights, -1) # list of lists (one per output node) of weights from hidden to output layer
+    new_weights = Enum.map(hidden_weights |> Enum.with_index, fn {output_node_weights, index} ->
+      output_node_weights
+      |> Enum.map(fn output_node_weight ->
+          output_node_weight + (learning_rate * Enum.at(output_layer_delta, index) * Enum.at(hidden_outputs, index))
+        end)
+    end)
+    nabla_weights = List.replace_at(nabla_biases, -1, new_weights) # update last hidden-output layer nabla weights
+
+    # TODO: calculate hidden layer errors
 
     {nabla_biases, nabla_weights}
   end
